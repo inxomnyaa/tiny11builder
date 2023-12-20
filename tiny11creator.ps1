@@ -160,25 +160,27 @@ if ($gotIso -eq $true) {
 
 	# Loading the registry from the mounted WIM image
 	Write-Output "Patching the registry in the install.wim image..."
+	reg load HKLM\installwim_COMPONENTS ($installImageFolder + "Windows\System32\config\COMPONENTS") | Out-Null
 	reg load HKLM\installwim_DEFAULT ($installImageFolder + "Windows\System32\config\default") | Out-Null
 	reg load HKLM\installwim_NTUSER ($installImageFolder + "Users\Default\ntuser.dat") | Out-Null
 	reg load HKLM\installwim_SOFTWARE ($installImageFolder + "Windows\System32\config\SOFTWARE") | Out-Null
 	reg load HKLM\installwim_SYSTEM ($installImageFolder + "Windows\System32\config\SYSTEM") | Out-Null
 
-	# Applying following registry patches on the system image:
-	#	Bypassing system requirements
-	#	Disabling Teams
-	#	Disabling Sponsored Apps
-	#	Enabling Local Accounts on OOBE
-	#	Disabling Reserved Storage
-	#	Disabling Chat icon
-	regedit /s ./tools/installwim_patches.reg | Out-Null
+	# Applying registry patches on the system image
+	# tiny11_installwim_patches.reg matches the patches from the original ntdev/tiny11builder
+	# user_installwim_patches.reg is for customized patches
+	regedit /s ./tools/tiny11_installwim_patches.reg | Out-Null
+	regedit /s ./tools/user_installwim_patches.reg | Out-Null
 
 	# Unloading the registry
+	reg unload HKLM\installwim_COMPONENTS | Out-Null
+	reg unload HKLM\installwim_DRIVERS | Out-Null
 	reg unload HKLM\installwim_DEFAULT | Out-Null
 	reg unload HKLM\installwim_NTUSER | Out-Null
+	reg unload HKLM\installwim_SCHEMA | Out-Null
 	reg unload HKLM\installwim_SOFTWARE | Out-Null
 	reg unload HKLM\installwim_SYSTEM | Out-Null
+	
 
 	#Copying the setup config file
 	Write-Output "Placing the autounattend.xml file in the install.wim image..."
