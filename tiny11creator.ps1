@@ -6,6 +6,9 @@ $unwantedProvisionnedPackages = $config.ProvisionnedPackagesToRemove
 $unwantedWindowsPackages = $config.WindowsPackagesToRemove
 $pathsToDelete = $config.PathsToDelete
 $windowsIsoDownloaderReleaseUrl = $config.WindowsIsoDownloaderReleaseUrl
+$skipIsoDownload = $config.SkipIsoDownload
+$isoInputFolder = $config.Windows11IsoInputFolder
+$isoOutputFolder = $config.Tiny11IsoOutputFolder
 
 #Defining system variables
 Write-Output "Creating needed variables..."
@@ -18,21 +21,74 @@ $isoPath = "c:\windows11.iso"
 $yes = (cmd /c "choice <nul 2>nul")[1]
 #The $yes variable gets the "y" from "yes" (or corresponding letter in the language your computer is using).
 #It is used to answer automatically to the "takeown" command, because the answer choices are localized which is not handy at all.
+# Specify the full path for the output ISO file
+$isoOutputPath = Join-Path $isoOutputFolder "tiny11.iso"
+# Temporary variable to track if we found & selected / downloaded an iso
+$gotIso = $false
 
 md $rootWorkdir | Out-Null
 md ($toolsFolder + "WindowsIsoDownloader\") | Out-Null
+md $isoOutputFolder -Force | Out-Null
 
-Write-Output "Downloading WindowsIsoDownloader release from GitHub..."
-Invoke-WebRequest -Uri $windowsIsoDownloaderReleaseUrl -OutFile WindowsIsoDownloader.zip
-Write-Output "Extracting WindowsIsoDownloader release..."
-Expand-Archive -Path WindowsIsoDownloader.zip -DestinationPath ($toolsFolder + "WindowsIsoDownloader\")
-Remove-Item WindowsIsoDownloader.zip | Out-Null
+# Try skipping download and scan folder for .iso
+if ($skipIsoDownload -eq $true) {
+    Write-Output "Skipping iso download... Scanning $isoInputFolder for .iso files..."
+    
+    # Get all .iso files in the specified folder
+    $isoFiles = Get-ChildItem -Path $isoInputFolder -Filter *.iso
 
-#Downloading the Windows 11 ISO using WindowsIsoDownloader
-Write-Output "Downloading Windows 11 iso file from Microsoft using WindowsIsoDownloader..."
-$isoDownloadProcess = (Start-Process ($toolsFolder + "WindowsIsoDownloader\WindowsIsoDownloader.exe") -NoNewWindow -Wait -WorkingDirectory ($toolsFolder + "WindowsIsoDownloader\") -PassThru)
+    # Check if there are multiple .iso files
+    if ($isoFiles.Count -eq 0) {
+        Write-Host "No .iso files found in the specified folder... Downloading using WindowsIsoDownloader instead..."
+        $skipIsoDownload = $false
+        $gotIso = $false
+    }
+    elseif ($isoFiles.Count -eq 1) {
+        # If only one .iso file is found, copy it to the destination path
+        Write-Host "ISO file found, copying $($isoFiles[0].FullName) to $isoPath"
+        Copy-Item -Path $isoFiles[0].FullName -Destination $isoPath -Force
+        Write-Host "ISO file copied to $isoPath"
+        $gotIso = $true
+    }
+    else {
+        # If multiple .iso files are found, prompt the user to select one
+        Write-Host "Multiple .iso files found. Please select one:"
+    
+        for ($i = 0; $i -lt $isoFiles.Count; $i++) {
+            Write-Host "$($i + 1): $($isoFiles[$i].Name)"
+        }
 
-if ($isoDownloadProcess.ExitCode -eq 0) {
+        $selectedIndex = Read-Host "Enter the number of the .iso file to copy"
+
+        if ($selectedIndex -ge 1 -and $selectedIndex -le $isoFiles.Count) {
+            $selectedIso = $isoFiles[$selectedIndex - 1]
+            Copy-Item -Path $selectedIso.FullName -Destination $isoPath -Force
+            Write-Host "Selected ISO file '$($selectedIso.Name)' copied to $isoPath"
+            $gotIso = $true
+        }
+        else {
+            Write-Host "Invalid selection. Please enter a valid number."
+        }
+    }
+}
+
+# If we haven't gotten an iso file yet, try downloading it via WindowsIsoDownloader
+if ($gotIso -eq $false) {# -or $skipIsoDownload -eq $true
+    Write-Output "Downloading WindowsIsoDownloader release from GitHub..."
+    Invoke-WebRequest -Uri $windowsIsoDownloaderReleaseUrl -OutFile WindowsIsoDownloader.zip
+    Write-Output "Extracting WindowsIsoDownloader release..."
+    Expand-Archive -Path WindowsIsoDownloader.zip -DestinationPath ($toolsFolder + "WindowsIsoDownloader\")
+    Remove-Item WindowsIsoDownloader.zip | Out-Null
+
+    #Downloading the Windows 11 ISO using WindowsIsoDownloader
+    Write-Output "Downloading Windows 11 iso file from Microsoft using WindowsIsoDownloader..."
+    $isoDownloadProcess = (Start-Process ($toolsFolder + "WindowsIsoDownloader\WindowsIsoDownloader.exe") -NoNewWindow -Wait -WorkingDirectory ($toolsFolder + "WindowsIsoDownloader\") -PassThru)
+    if($isoDownloadProcess.ExitCode -eq 0){
+        $gotIso = $true
+    }
+}
+
+if ($gotIso -eq $true) {
 	#Mount the Windows 11 ISO
 	Write-Output "Mounting the original iso..."
 	$mountResult = Mount-DiskImage -ImagePath $isoPath
@@ -176,8 +232,9 @@ if ($isoDownloadProcess.ExitCode -eq 0) {
 	[System.IO.File]::Copy((Get-ChildItem .\tools\autounattend.xml).FullName, ($isoFolder + "autounattend.xml"), $true) | Out-Null
 
 	#Building the new trimmed and patched iso file
-	Write-Output "Building the tiny11.iso file..."
-	.\tools\oscdimg.exe -m -o -u2 -udfver102 -bootdata:("2#p0,e,b" + $isoFolder + "boot\etfsboot.com#pEF,e,b" + $isoFolder + "efi\microsoft\boot\efisys.bin") $isoFolder c:\tiny11.iso | Out-Null
+	Write-Output "Building the tiny11.iso file...\n"
+	.\tools\oscdimg.exe -m -o -u2 -udfver102 -bootdata:("2#p0,e,b" + $isoFolder + "boot\etfsboot.com#pEF,e,b" + $isoFolder + "efi\microsoft\boot\efisys.bin") $isoFolder $isoOutputPath | Out-Null
+    Write-Output "Complete! iso file written to: $isoOutputFolder"
 } else {
 	Write-Output "Unable to build the tiny11 iso (an error occured while trying to download the original iso using WindowsIsoDownloader)."
 }
