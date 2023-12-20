@@ -1,1 +1,3 @@
 tools/WindowsIsoDownloader
+iso/
+*.iso
