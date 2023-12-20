@@ -1,6 +1,6 @@
 {
-	"SkipIsoDownload": true,
-	"Windows11IsoInputFolder": "Z:\\OS\\tiny11",
+	"SkipIsoDownload": false,
+	"Windows11IsoInputFolder": ".",
 	"Tiny11IsoOutputFolder": ".\\iso",
     "WindowsIsoDownloaderReleaseUrl": "https://github.com/ianis58/WindowsIsoDownloader/releases/latest/download/WindowsIsoDownloader.zip",
     "WantedWindowsEdition": "Windows 11 Pro",

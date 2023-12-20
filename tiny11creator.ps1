@@ -32,7 +32,7 @@ md $isoOutputFolder -Force | Out-Null
 
 # Try skipping download and scan folder for .iso
 if ($skipIsoDownload -eq $true) {
-    Write-Output "Skipping iso download... Scanning $isoInputFolder for .iso files..."
+    Write-Output "Skipping iso download... Scanning $((Get-Item -LiteralPath $isoInputFolder).FullName) for .iso files..."
     
     # Get all .iso files in the specified folder
     $isoFiles = Get-ChildItem -Path $isoInputFolder -Filter *.iso
@@ -234,7 +234,7 @@ if ($gotIso -eq $true) {
 	#Building the new trimmed and patched iso file
 	Write-Output "Building the tiny11.iso file...\n"
 	.\tools\oscdimg.exe -m -o -u2 -udfver102 -bootdata:("2#p0,e,b" + $isoFolder + "boot\etfsboot.com#pEF,e,b" + $isoFolder + "efi\microsoft\boot\efisys.bin") $isoFolder $isoOutputPath | Out-Null
-    Write-Output "Complete! iso file written to: $isoOutputFolder"
+    Write-Output "Complete! iso file written to: $((Get-Item -LiteralPath $isoOutputFolder).FullName)"
 } else {
 	Write-Output "Unable to build the tiny11 iso (an error occured while trying to download the original iso using WindowsIsoDownloader)."
 }
