@@ -4,7 +4,7 @@
 	"Tiny11IsoOutputFolder": ".\\iso",
     "WindowsIsoDownloaderReleaseUrl": "https://github.com/ianis58/WindowsIsoDownloader/releases/latest/download/WindowsIsoDownloader.zip",
     "WantedWindowsEdition": "Windows 11 Pro",
-    "ProvisionnedPackagesToRemove": [
+    "ProvisionedPackagesToRemove": [
         "Clipchamp.Clipchamp_",
         "Microsoft.BingNews_",
         "Microsoft.BingWeather_",

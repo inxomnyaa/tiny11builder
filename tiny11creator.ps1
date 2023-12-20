@@ -2,7 +2,7 @@
 Write-Output "Loading configuration from config.json..."
 $config = (Get-Content "config.json" -Raw) | ConvertFrom-Json
 $wantedImageName = $config.WantedWindowsEdition
-$unwantedProvisionnedPackages = $config.ProvisionnedPackagesToRemove
+$unwantedProvisionedPackages = $config.ProvisionedPackagesToRemove
 $unwantedWindowsPackages = $config.WindowsPackagesToRemove
 $pathsToDelete = $config.PathsToDelete
 $windowsIsoDownloaderReleaseUrl = $config.WindowsIsoDownloaderReleaseUrl
@@ -117,15 +117,15 @@ if ($gotIso -eq $true) {
 	Set-ItemProperty -Path ($isoFolder + "sources\install.wim") -Name IsReadOnly -Value $false | Out-Null
 	Mount-WindowsImage -ImagePath ($isoFolder + "sources\install.wim") -Path $installImageFolder -Index $wantedImageIndex | Out-Null
 
-	#Detecting provisionned app packages
+	#Detecting Provisioned app packages
 	Write-Output "Removing unwanted app packages from the install.wim image..."
-	$detectedProvisionnedPackages = Get-AppxProvisionedPackage -Path $installImageFolder
+	$detectedProvisionedPackages = Get-AppxProvisionedPackage -Path $installImageFolder
 
-	#Removing unwanted provisionned app packages
-	foreach ($detectedProvisionnedPackage in $detectedProvisionnedPackages) {
-		foreach ($unwantedProvisionnedPackage in $unwantedProvisionnedPackages) {
-			if ($detectedProvisionnedPackage.PackageName.Contains($unwantedProvisionnedPackage)) {
-				Remove-AppxProvisionedPackage -Path $installImageFolder -PackageName $detectedProvisionnedPackage.PackageName -ErrorAction SilentlyContinue | Out-Null
+	#Removing unwanted Provisioned app packages
+	foreach ($detectedProvisionedPackage in $detectedProvisionedPackages) {
+		foreach ($unwantedProvisionedPackage in $unwantedProvisionedPackages) {
+			if ($detectedProvisionedPackage.PackageName.Contains($unwantedProvisionedPackage)) {
+				Remove-AppxProvisionedPackage -Path $installImageFolder -PackageName $detectedProvisionedPackage.PackageName -ErrorAction SilentlyContinue | Out-Null
 			}
 		}
 	}
