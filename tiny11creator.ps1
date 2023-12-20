@@ -170,7 +170,12 @@ if ($gotIso -eq $true) {
 	# tiny11_installwim_patches.reg matches the patches from the original ntdev/tiny11builder
 	# user_installwim_patches.reg is for customized patches
 	regedit /s ./tools/tiny11_installwim_patches.reg | Out-Null
-	regedit /s ./tools/user_installwim_patches.reg | Out-Null
+	$userWimPatches = "./tools/user_installwim_patches.reg"
+	if (Test-Path $userWimPatches) {
+		regedit /s $userWimPatches | Out-Null
+	} else {
+		Write-Host "No user patches for install.wim found (Registry file $userWimPatches not found)"
+	}
 
 	# Unloading the registry
 	reg unload HKLM\installwim_COMPONENTS | Out-Null
@@ -181,7 +186,6 @@ if ($gotIso -eq $true) {
 	reg unload HKLM\installwim_SOFTWARE | Out-Null
 	reg unload HKLM\installwim_SYSTEM | Out-Null
 	
-
 	#Copying the setup config file
 	Write-Output "Placing the autounattend.xml file in the install.wim image..."
 	[System.IO.File]::Copy((Get-ChildItem .\tools\autounattend.xml).FullName, ($installImageFolder + "Windows\System32\Sysprep\autounattend.xml"), $true) | Out-Null
@@ -205,16 +209,21 @@ if ($gotIso -eq $true) {
 	Mount-WindowsImage -ImagePath ($isoFolder + "sources\boot.wim") -Path $bootImageFolder -Index 2 | Out-Null
 
 	Write-Output "Patching the registry in the boot.wim image..."
+	reg load HKLM\bootwim_COMPONENTS ($bootImageFolder + "Windows\System32\config\COMPONENTS") | Out-Null
 	reg load HKLM\bootwim_DEFAULT ($bootImageFolder + "Windows\System32\config\default") | Out-Null
 	reg load HKLM\bootwim_NTUSER ($bootImageFolder + "Users\Default\ntuser.dat") | Out-Null
+	reg load HKLM\bootwim_SOFTWARE ($bootImageFolder + "Windows\System32\config\SOFTWARE") | Out-Null
 	reg load HKLM\bootwim_SYSTEM ($bootImageFolder + "Windows\System32\config\SYSTEM") | Out-Null
 
-	# Applying following registry patches on the boot image:
-	#	Bypassing system requirements
+	# Applying registry patches on the boot image
 	regedit /s ./tools/bootwim_patches.reg | Out-Null
 
+	reg unload HKLM\bootwim_COMPONENTS | Out-Null
+	reg unload HKLM\bootwim_DRIVERS | Out-Null
 	reg unload HKLM\bootwim_DEFAULT | Out-Null
 	reg unload HKLM\bootwim_NTUSER | Out-Null
+	reg unload HKLM\bootwim_SCHEMA | Out-Null
+	reg unload HKLM\bootwim_SOFTWARE | Out-Null
 	reg unload HKLM\bootwim_SYSTEM | Out-Null
 
 	#Unmount the boot.wim image
@@ -234,9 +243,9 @@ if ($gotIso -eq $true) {
 	[System.IO.File]::Copy((Get-ChildItem .\tools\autounattend.xml).FullName, ($isoFolder + "autounattend.xml"), $true) | Out-Null
 
 	#Building the new trimmed and patched iso file
-	Write-Output "Building the tiny11.iso file...\n"
+	Write-Output "Building the tiny11.iso file...\n\n"
 	.\tools\oscdimg.exe -m -o -u2 -udfver102 -bootdata:("2#p0,e,b" + $isoFolder + "boot\etfsboot.com#pEF,e,b" + $isoFolder + "efi\microsoft\boot\efisys.bin") $isoFolder $isoOutputPath | Out-Null
-    Write-Output "Complete! iso file written to: $((Get-Item -LiteralPath $isoOutputFolder).FullName)"
+    Write-Output "\n\nComplete! iso file written to: $((Get-Item -LiteralPath $isoOutputFolder).FullName)"
 } else {
 	Write-Output "Unable to build the tiny11 iso (an error occured while trying to download the original iso using WindowsIsoDownloader)."
 }
