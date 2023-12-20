@@ -26,9 +26,9 @@ $isoOutputPath = Join-Path $isoOutputFolder "tiny11.iso"
 # Temporary variable to track if we found & selected / downloaded an iso
 $gotIso = $false
 
-md $rootWorkdir | Out-Null
-md ($toolsFolder + "WindowsIsoDownloader\") | Out-Null
-md $isoOutputFolder -Force | Out-Null
+mkdir $rootWorkdir | Out-Null
+mkdir ($toolsFolder + "WindowsIsoDownloader\") | Out-Null
+mkdir $isoOutputFolder -Force | Out-Null
 
 # Try skipping download and scan folder for .iso
 if ($skipIsoDownload -eq $true) {
@@ -96,13 +96,13 @@ if ($gotIso -eq $true) {
 
 	#Creating needed temporary folders
 	Write-Output "Creating temporary folders..."
-	md $isoFolder | Out-Null
-	md $installImageFolder | Out-Null
-	md $bootImageFolder | Out-Null
+	mkdir $isoFolder | Out-Null
+	mkdir $installImageFolder | Out-Null
+	mkdir $bootImageFolder | Out-Null
 
 	#Copying the ISO files to the ISO folder
 	Write-Output "Copying the content of the original iso to the work folder..."
-	cp -Recurse ($isoDriveLetter + ":\*") $isoFolder | Out-Null
+	Copy-Item -Recurse ($isoDriveLetter + ":\*") $isoFolder | Out-Null
 
 	#Unmounting the original ISO since we don't need it anymore (we have a copy of the content)
 	Write-Output "Unmounting the original iso..."
@@ -193,7 +193,7 @@ if ($gotIso -eq $true) {
 	Export-WindowsImage -SourceImagePath ($isoFolder + "sources\install.wim") -SourceIndex $wantedImageIndex -DestinationImagePath ($isoFolder + "sources\install_patched.wim") -CompressionType max | Out-Null
 
 	#Delete the old install.wim and rename the new one
-	rm ($isoFolder + "sources\install.wim") | Out-Null
+	Remove-Item ($isoFolder + "sources\install.wim") | Out-Null
 	Rename-Item -Path ($isoFolder + "sources\install_patched.wim") -NewName "install.wim" | Out-Null
 	################# Ending of install.wim patches ##################
 
@@ -224,7 +224,7 @@ if ($gotIso -eq $true) {
 	Export-WindowsImage -SourceImagePath ($isoFolder + "sources\boot.wim") -SourceIndex 2 -DestinationImagePath ($isoFolder + "sources\boot_patched.wim") -CompressionType max | Out-Null
 
 	#Delete the old boot.wim and rename the new one
-	rm ($isoFolder + "sources\boot.wim") | Out-Null
+	Remove-Item ($isoFolder + "sources\boot.wim") | Out-Null
 	Rename-Item -Path ($isoFolder + "sources\boot_patched.wim") -NewName "boot.wim" | Out-Null
 	################# Ending of boot.wim patches ##################
 
