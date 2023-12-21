@@ -161,55 +161,31 @@ if ($gotIso -eq $true) {
 	# Loading the registry from the mounted WIM image
 	Write-Output "Patching the registry in the install.wim image..."
 	reg load HKLM\installwim_COMPONENTS ($installImageFolder + "Windows\System32\config\COMPONENTS") | Out-Null
-	Write-Output "-"
 	reg load HKLM\installwim_DEFAULT ($installImageFolder + "Windows\System32\config\default") | Out-Null
-	Write-Output "-"
 	reg load HKLM\installwim_NTUSER ($installImageFolder + "Users\Default\ntuser.dat") | Out-Null
-	Write-Output "-"
 	reg load HKLM\installwim_SOFTWARE ($installImageFolder + "Windows\System32\config\SOFTWARE") | Out-Null
-	Write-Output "-"
 	reg load HKLM\installwim_SYSTEM ($installImageFolder + "Windows\System32\config\SYSTEM") | Out-Null
-	Write-Output "-"
 
-	Write-Output "-"
 	# Applying registry patches on the system image
-	Write-Output "-"
 	# tiny11_installwim_patches.reg matches the patches from the original ntdev/tiny11builder
-	Write-Output "-"
 	# user_installwim_patches.reg is for customized patches
-	Write-Output "-"
 	regedit /s ./tools/tiny11_installwim_patches.reg | Out-Null
-	Write-Output "-"
 	$userWimPatches = "./tools/user_installwim_patches.reg"
-	Write-Output "-"
 	if (Test-Path $userWimPatches) {
-	Write-Output "-if"
+		Write-Host "Found user patches for install.wim (Registry file $userWimPatches), applying..."
 		regedit /s $userWimPatches | Out-Null
-	Write-Output "-"
 	} else {
-	Write-Output "-else"
 		Write-Host "No user patches for install.wim found (Registry file $userWimPatches not found)"
-	Write-Output "-"
 	}
-	Write-Output "-"
 
-	Write-Output "-"
 	# Unloading the registry
-	Write-Output "-"
 	reg unload HKLM\installwim_COMPONENTS | Out-Null
-	Write-Output "-"
 	reg unload HKLM\installwim_DRIVERS | Out-Null
-	Write-Output "-"
 	reg unload HKLM\installwim_DEFAULT | Out-Null
-	Write-Output "-"
 	reg unload HKLM\installwim_NTUSER | Out-Null
-	Write-Output "-"
 	reg unload HKLM\installwim_SCHEMA | Out-Null
-	Write-Output "-"
 	reg unload HKLM\installwim_SOFTWARE | Out-Null
-	Write-Output "-"
 	reg unload HKLM\installwim_SYSTEM | Out-Null
-	Write-Output "-"
 	
 	#Copying the setup config file
 	Write-Output "Placing the autounattend.xml file in the install.wim image..."
