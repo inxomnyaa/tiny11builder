@@ -279,4 +279,5 @@ if ($gotIso -eq $true) {
 
 #Cleaning the folders used during the process
 Write-Output "Removing work folders..."
+Remove-Item $isoPath -Force -ErrorAction SilentlyContinue | Out-Null
 Remove-Item $rootWorkdir -Force -Recurse -ErrorAction SilentlyContinue | Out-Null
